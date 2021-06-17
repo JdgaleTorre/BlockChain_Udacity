@@ -72,10 +72,15 @@ class Blockchain {
           self.height === -1 ? null : self.chain[self.chain.length - 1].hash;
         block.height = await self.getChainHeight();
         block.hash = SHA256(JSON.stringify(block)).toString();
-        self.chain.push(block);
-        self.height = self.chain.length;
 
-        resolve(block);
+        if (await block.validate()) {
+          self.chain.push(block);
+          self.height = self.chain.length;
+
+          resolve(block);
+        } else {
+          resolve(null);
+        }
       } catch (e) {
         reject(e);
       }
