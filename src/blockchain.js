@@ -161,7 +161,7 @@ class Blockchain {
     return new Promise((resolve, reject) => {
       let result = self.chain.filter((block) => block.hash === hash);
       if (result.length > 0) resolve(result);
-      reject(null);
+      resolve(null);
     });
   }
 
@@ -229,6 +229,8 @@ class Blockchain {
               error:
                 "Not a valid block, the previous block hash isn't correct.",
             });
+          } else {
+            previousBlockHash = block.hash;
           }
         } else {
           previousBlockHash = block.hash;
