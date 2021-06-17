@@ -11,6 +11,7 @@
 const SHA256 = require("crypto-js/sha256");
 const BlockClass = require("./block.js");
 const bitcoinMessage = require("bitcoinjs-message");
+const FIVEMINS = 5 * 60 * 1000;
 
 class Blockchain {
   /**
@@ -44,7 +45,8 @@ class Blockchain {
    */
   getChainHeight() {
     return new Promise((resolve, reject) => {
-      resolve(this.height);
+      let height = this.height === -1 ? 0 : this.height;
+      resolve(height);
     });
   }
 
@@ -124,7 +126,7 @@ class Blockchain {
         new Date().getTime().toString().slice(0, -3)
       );
 
-      if (currentTime - timeSubmit < 300) {
+      if (currentTime - timeSubmit < FIVEMINS) {
         if (bitcoinMessage.verify(message, address, signature)) {
           try {
             let block = new BlockClass.Block({
@@ -185,19 +187,12 @@ class Blockchain {
     let self = this;
     let stars = [];
     return new Promise(async (resolve, reject) => {
-      let starsDecode = await self.chain.map(async (blockMap) => {
-        try {
-          let decode = await blockMap.getBData();
-          return { ...decode };
-        } catch (e) {
-          return;
+      await self.chain.forEach(async (block) => {
+        let data = await block.getBData();
+        if (data.owner === address) {
+          stars.push(data);
         }
       });
-      console.log(starsDecode);
-
-      stars = starsDecode.filter((block) => block.owner === address);
-
-      console.log(stars);
       resolve(stars);
     });
   }
@@ -211,6 +206,7 @@ class Blockchain {
   validateChain() {
     let self = this;
     let errorLog = [];
+    let previousBlockHash = null;
     return new Promise(async (resolve, reject) => {
       self.chain.forEach(async (block) => {
         let result = await block.validate();
@@ -219,6 +215,18 @@ class Blockchain {
             blockHeight: block.height,
             error: "Not a valid block",
           });
+        }
+
+        if (previousBlockHash) {
+          if (previousBlockHash !== block.previousBlockHash) {
+            errorLog.push({
+              blockHeight: block.height,
+              error:
+                "Not a valid block, the previous block hash isn't correct.",
+            });
+          }
+        } else {
+          previousBlockHash = block.hash;
         }
       });
 
