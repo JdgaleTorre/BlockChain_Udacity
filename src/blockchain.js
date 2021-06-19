@@ -11,7 +11,7 @@
 const SHA256 = require("crypto-js/sha256");
 const BlockClass = require("./block.js");
 const bitcoinMessage = require("bitcoinjs-message");
-const FIVEMINS = 5 * 60 * 1000;
+const FIVEMINS = 5 * 60;
 
 class Blockchain {
   /**
