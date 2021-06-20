@@ -77,7 +77,12 @@ class Blockchain {
           self.chain.push(block);
           self.height = self.chain.length;
 
-          resolve(block);
+          const validateChainLog = await self.validateChain();
+          if (validateChainLog.length === 0) {
+            resolve(block);
+          } else {
+            reject(validateChainLog);
+          }
         } else {
           resolve(null);
         }
@@ -159,8 +164,8 @@ class Blockchain {
   getBlockByHash(hash) {
     let self = this;
     return new Promise((resolve, reject) => {
-      let result = self.chain.filter((block) => block.hash === hash);
-      if (result.length > 0) resolve(result);
+      let result = self.chain.find((block) => block.hash === hash);
+      if (result) resolve(result);
       resolve(null);
     });
   }
@@ -173,7 +178,7 @@ class Blockchain {
   getBlockByHeight(height) {
     let self = this;
     return new Promise((resolve, reject) => {
-      let block = self.chain.filter((p) => p.height === height)[0];
+      let block = self.chain.find((p) => p.height === height);
       if (block) {
         resolve(block);
       } else {
@@ -192,8 +197,8 @@ class Blockchain {
     let self = this;
     let stars = [];
     return new Promise(async (resolve, reject) => {
-      await self.chain.forEach(async (block) => {
-        let data = await block.getBData();
+      self.chain.forEach(async (block) => {
+        let data = block.getBData();
         if (data.owner === address) {
           stars.push(data);
         }
@@ -213,7 +218,8 @@ class Blockchain {
     let errorLog = [];
     let previousBlockHash = null;
     return new Promise(async (resolve, reject) => {
-      self.chain.forEach(async (block) => {
+      for (let i = 0; i < self.chain.length; i++) {
+        let block = self.chain[i];
         let result = await block.validate();
         if (!result) {
           errorLog.push({
@@ -235,7 +241,7 @@ class Blockchain {
         } else {
           previousBlockHash = block.hash;
         }
-      });
+      }
 
       resolve(errorLog);
     });
